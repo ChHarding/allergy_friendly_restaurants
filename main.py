@@ -75,9 +75,32 @@ import folium
 from streamlit_folium import st_folium
 import requests
 import pandas as pd
-def get_location(user_input):
-    # Placeholder for geocoding logic
-    return 40.7128, -74.0060  # Example: New York City coordinates
+OVERPASS_URL = "https://overpass-api.de/api/interpreter" # Overpass API endpoint for querying OpenStreetMap data
+
+
+def get_location(zip_code): # Function to convert user input location (ZIP code) into latitude and longitude coordinates using the Nominatim API
+    NOMINATIMurl = "https://nominatim.openstreetmap.org/search" # Nominatim API endpoint for geocoding
+    
+    APIparams = { # Parameters for Nominatim API request
+        "postalcode": zip_code,
+        "country": "USA",
+        "format": "json"
+    }
+
+    headers = {
+        "User-Agent": "accessible-dining-app"  # REQUIRED by Nominatim API usage policy to identify the application making requests
+    }
+
+    APIresponse = requests.get(NOMINATIMurl, params=APIparams, headers=headers) # Send GET request to Nominatim API with specified parameters and headers
+    NOMINATIMdata = APIresponse.json() # Parse the JSON response from the API into a list of dictionaries
+
+    if NOMINATIMdata:
+        return float(NOMINATIMdata[0]["lat"]), float(NOMINATIMdata[0]["lon"])
+    
+    return None, None
+
+
+
 def fetch_restaurants(lat, lon, radius):
     # Placeholder for Overpass API call
     # Example response structure
@@ -99,6 +122,7 @@ def filter_restaurants(data, filters):
             continue
         filtered.append(restaurant)
     return filtered
+
 def generate_map(data):
     m = folium.Map(location=[data[0]["lat"], data[0]["lon"]], zoom_start=13)
     for restaurant in data:
@@ -107,6 +131,7 @@ def generate_map(data):
             popup=f"{restaurant['name']} - Safety Score: {restaurant['safety_score']}"
         ).add_to(m)
     return m
+
 def main():
     st.title("Accessible Dining Finder")
     location_input = st.text_input("Enter a location (e.g., ZIP code, city):")
@@ -125,5 +150,6 @@ def main():
             st_folium(restaurant_map, width=700, height=500)
         else:
             st.write("No restaurants found matching the criteria.")
+
 if __name__ == "__main__":
     main()
