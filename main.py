@@ -256,8 +256,7 @@ def generate_map(data): # Function to create a Folium map with markers for each 
     
     return m # Create a Folium map centered on the location of the first restaurant in the data list
 
-
-#TODO make sure to let the user know the radius has to be between 5-50 mi
+#TODO move the instructions above the text entry fields
 #TODO make this implementable on an app not just desktop
 def main(): # Main function to run the Streamlit app, which handles user input, data fetching, processing, and displaying results on an interactive map
     
@@ -268,8 +267,8 @@ def main(): # Main function to run the Streamlit app, which handles user input, 
 
     st.title("Accessible Dining Finder") # Set the title of the Streamlit app to "Accessible Dining Finder"
     
-    location_input = st.text_input("Enter a location (e.g., ZIP code, city):") # Create a text input field for the user to enter a location (such as a ZIP code or city name) and store the input in the variable 'location_input'
-    radius_input = st.number_input("Enter search radius (miles):", min_value=1, max_value=50, value=5) # Create a number input field for the user to specify the search radius in miles, with a minimum value of 1, a maximum value of 50, and a default value of 5. Store the input in the variable 'radius_input'
+    location_input = st.text_input("Enter a location's zip code:") # Create a text input field for the user to enter a location (such as a ZIP code or city name) and store the input in the variable 'location_input'
+    radius_input = st.number_input("Enter search radius (5-50 miles):", min_value=1, max_value=50, value=5) # Create a number input field for the user to specify the search radius in miles, with a minimum value of 1, a maximum value of 50, and a default value of 5. Store the input in the variable 'radius_input'
     dietary_filter = st.selectbox("Select dietary needs:", ["", "Gluten-free", "Vegan", "Dairy-free"]) # Create a dropdown select box for the user to choose a dietary filter (options include "Gluten-free", "Vegan", "Dairy-free", and an empty option for no filter). Store the selected option in the variable 'dietary_filter'
     #cuisine_filter = st.text_input("Enter cuisine type (optional):") # Create a text input field for the user to optionally enter a cuisine type as a filter and store the input in the variable 'cuisine_filter'
     
