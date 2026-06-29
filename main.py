@@ -87,7 +87,9 @@ def get_location(zip_code): # Function to convert user input location (ZIP code)
         "q": zip_code,
         "format": "json",
         "countrycodes": "us",
-        "limit": 1
+        "limit": 1,
+        "addressdetails": 1,
+        "polygon_geojson": 0
     } # Parameters for Nominatim API request, including the query (ZIP code), response format (JSON), country code (US), and limit on the number of results (1)
 
     headers = {
@@ -96,30 +98,53 @@ def get_location(zip_code): # Function to convert user input location (ZIP code)
 
     APIresponse = requests.get(NOMINATIMurl, params=APIparams, headers=headers) # Send get request to Nominatim API with specified parameters and headers
     NOMINATIMdata = APIresponse.json() # Parse the JSON response from the API into a list of dictionaries
-
-    if NOMINATIMdata: # Check if the response contains any results (i.e., if the list is not empty)
-        return float(NOMINATIMdata[0]["lat"]), float(NOMINATIMdata[0]["lon"]) # Return the latitude and longitude of the first result from the Nominatim API response
     
-    return None, None
+    # checks json response
+    if not NOMINATIMdata:
+        return None, None, None
+    
+    result = NOMINATIMdata[0] # gets the response from the API
+
+    # assigns values to lat and lon from API call
+    lat = float(result["lat"])
+    lon = float(result["lon"])
+
+    # creates a bounding box to help align lat/lon with city/county names
+    bbox = result.get("boundingbox", None)
+
+    return lat, lon, bbox
 
 
-
-def fetch_restaurants(lat, lon, radius, dietary): # Function to fetch nearby restaurants from the Overpass API based on latitude, longitude, and search radius
+#adds a bounding box parameter optionally
+def fetch_restaurants(lat, lon, radius, bbox=None): # Function to fetch nearby restaurants from the Overpass API based on latitude, longitude, and search radius
     # Convert miles to meters 
     radius_km = radius * 1609  # meters (Overpass uses meters)
 
     dietary_filter = ""  # filter results in Python instead of API
 
-    # Construct the Overpass API query to retrieve nodes, ways, and relations that are tagged as restaurants and match the specified dietary filter within the given radius around the provided latitude and longitude.
-    APIquery = f"""
-    [out:json][timeout:60];
-    (
-    node["amenity"="restaurant"](around:{radius_km},{lat},{lon});
-    way["amenity"="restaurant"](around:{radius_km},{lat},{lon});
-    relation["amenity"="restaurant"](around:{radius_km},{lat},{lon});
-    );
-    out center;
-    """
+    #determine API query based on whether the user has entered a city/county name and needs a bounding box
+    if bbox:
+        lat1, lat2, lon1, lon2 = bbox
+
+        APIquery = f"""
+        [out:json][timeout:60];
+        (
+        node["amenity"="restaurant"]({lat1},{lon1},{lat2},{lon2});
+        way["amenity"="restaurant"]({lat1},{lon1},{lat2},{lon2});
+        relation["amenity"="restaurant"]({lat1},{lon1},{lat2},{lon2});
+        );
+        out center;
+        """
+    else:
+        APIquery = f"""
+        [out:json][timeout:60];
+        (
+        node["amenity"="restaurant"](around:{radius_km},{lat},{lon});
+        way["amenity"="restaurant"](around:{radius_km},{lat},{lon});
+        relation["amenity"="restaurant"](around:{radius_km},{lat},{lon});
+        );
+        out center;
+        """
     # Send a post request to the Overpass API with the constructed query to retrieve restaurant data in JSON format
     # The response is stored in the variable 'response'
     response = requests.post(OVERPASS_URL, data={"data": APIquery}, headers={"User-Agent": "accessible-dining-app"})
@@ -273,6 +298,10 @@ def main(): # Main function to run the Streamlit app, which handles user input, 
     if "results" not in st.session_state:
         st.session_state.results = None # Initialize a session state variable called "results" to store the list of restaurants fetched from the API. 
         #This allows the data to persist across user interactions within the Streamlit app.
+    
+    #prevent the map from re-rendering too often
+    if "map" not in st.session_state:
+        st.session_state.map = None
 
     st.title("Accessible Dining Finder") # Set the title of the Streamlit app to "Accessible Dining Finder"
     
@@ -292,7 +321,7 @@ def main(): # Main function to run the Streamlit app, which handles user input, 
 
     # The dietary filter is transformed to match the tag format used in the restaurant data.
     if st.button("Search"):
-        lat, lon = get_location(location_input)
+        lat, lon, bbox = get_location(location_input)
 
         if lat is None or lon is None:
             st.error("Could not find that location. Try a different city, ZIP, or county.")
@@ -301,7 +330,7 @@ def main(): # Main function to run the Streamlit app, which handles user input, 
 
         # Fetch restaurants from the Overpass API based on the user's input location, search radius, and dietary filter. 
         # The fetched restaurant data is stored in the variable 'restaurants'.
-        restaurants = fetch_restaurants(lat, lon, radius_input, dietary_filters)
+        restaurants = fetch_restaurants(lat, lon, radius_input, bbox)
 
         #parses through restaurant data and computes safety score for each restaurant, adding it as a new key-value pair in the restaurant dictionary
         for restaurant in restaurants:
@@ -313,6 +342,7 @@ def main(): # Main function to run the Streamlit app, which handles user input, 
 
         # save results so it doesn't flicker on every interaction
         st.session_state.results = filtered_restaurants
+        st.session_state.map = generate_map(filtered_restaurants)  # store map
 
     # Check if there are results stored in the session state. 
     # If there are results, display them on an interactive map using Folium. 
@@ -328,9 +358,9 @@ def main(): # Main function to run the Streamlit app, which handles user input, 
     else:
         st.write(f"Showing {len(results)} restaurants")
 
-        restaurant_map = generate_map(results)
-        if restaurant_map:
-            st_folium(restaurant_map, width=700, height=500)
+        #builds folium map with 700 width and 500 height
+        if st.session_state.map:
+            st_folium(st.session_state.map, width=700, height=500)
 
 
 #main function runs when entering this command in terminal in VScode: streamlit run "/Users/ctlott/Desktop/Master's Degree💅🏻/Python Application Development/allergy_friendly_restaurants/main.py"

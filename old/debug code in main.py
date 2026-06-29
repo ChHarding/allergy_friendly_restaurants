@@ -41,3 +41,15 @@
             if len(examples) >= 5:
                 break
     """
+
+#old api query
+# Construct the Overpass API query to retrieve nodes, ways, and relations that are tagged as restaurants and match the specified dietary filter within the given radius around the provided latitude and longitude.
+    APIquery = f"""
+#   [out:json][timeout:60];
+#    (
+#    node["amenity"="restaurant"](around:{radius_km},{lat},{lon});
+#    way["amenity"="restaurant"](around:{radius_km},{lat},{lon});
+#   relation["amenity"="restaurant"](around:{radius_km},{lat},{lon});
+#    );
+#    out center;
+#    """
