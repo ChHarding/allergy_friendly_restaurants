@@ -218,9 +218,18 @@ def filter_restaurants(restaurants, filters):
 
         # dietary filter
         if dietary:
-            tag_value = tags.get(f"diet:{dietary}")
+            all_match = True
 
-            if tag_value not in ["yes", "only"]:
+            # parses through the dietary tags to find which ones have been selected, if any
+            for d in dietary:
+                tag_value = tags.get(f"diet:{d}")
+
+                if tag_value not in ["yes", "only"]:
+                    all_match = False
+                    break
+                
+            # if no dietary tags have been selected, then continue
+            if not all_match:
                 continue
         
         """"
@@ -267,29 +276,39 @@ def main(): # Main function to run the Streamlit app, which handles user input, 
 
     st.title("Accessible Dining Finder") # Set the title of the Streamlit app to "Accessible Dining Finder"
     
-    location_input = st.text_input("Enter a location's zip code:") # Create a text input field for the user to enter a location (such as a ZIP code or city name) and store the input in the variable 'location_input'
+    location_input = st.text_input("Enter a location (ZIP, city, or county):") # Create a text input field for the user to enter a location (Zip/city/county) and store the input in the variable 'location_input'
     radius_input = st.number_input("Enter search radius (5-50 miles):", min_value=1, max_value=50, value=5) # Create a number input field for the user to specify the search radius in miles, with a minimum value of 1, a maximum value of 50, and a default value of 5. Store the input in the variable 'radius_input'
-    dietary_filter = st.selectbox("Select dietary needs:", ["", "Gluten-free", "Vegan", "Dairy-free"]) # Create a dropdown select box for the user to choose a dietary filter (options include "Gluten-free", "Vegan", "Dairy-free", and an empty option for no filter). Store the selected option in the variable 'dietary_filter'
+    dietary_options = st.multiselect(
+        "Select dietary needs:",
+        ["Gluten-free", "Vegan", "Dairy-free"]
+    ) # Create a select box for the user to choose multiple dietary filters (options include "Gluten-free", "Vegan", "Dairy-free", and an option for no filter). Store the selected option in the variable 'dietary_filter'
     #cuisine_filter = st.text_input("Enter cuisine type (optional):") # Create a text input field for the user to optionally enter a cuisine type as a filter and store the input in the variable 'cuisine_filter'
     
     #Convert dietary filter input to tag format
-    dietary_filter = dietary_filter.lower().replace("-", "_").replace(" ", "_") # Convert the user's selected dietary filter into a format that matches the expected tag format used in the restaurant data (e.g., "Gluten-free" becomes "gluten_free"). If no dietary filter is selected, set 'dietary_tag' to an empty string.
+    dietary_filters = [
+        d.lower().replace("-", "_").replace(" ", "_")
+        for d in dietary_options
+    ] # Convert the user's selected dietary filter into a format that matches the expected tag format used in the restaurant data (e.g., "Gluten-free" becomes "gluten_free"). If no dietary filter is selected, set 'dietary_tag' to an empty string.
 
     # The dietary filter is transformed to match the tag format used in the restaurant data.
     if st.button("Search"):
         lat, lon = get_location(location_input)
+
+        if lat is None or lon is None:
+            st.error("Could not find that location. Try a different city, ZIP, or county.")
+            return
         #st.write(f"DEBUG location: lat={lat}, lon={lon}")
 
         # Fetch restaurants from the Overpass API based on the user's input location, search radius, and dietary filter. 
         # The fetched restaurant data is stored in the variable 'restaurants'.
-        restaurants = fetch_restaurants(lat, lon, radius_input, dietary_filter)
+        restaurants = fetch_restaurants(lat, lon, radius_input, dietary_filters)
 
         #parses through restaurant data and computes safety score for each restaurant, adding it as a new key-value pair in the restaurant dictionary
         for restaurant in restaurants:
             restaurant["safety_score"] = compute_safety_score(restaurant)
 
         #filters = {"dietary": dietary_filter, "cuisine": cuisine_filter}
-        filters = {"dietary": dietary_filter}
+        filters = {"dietary": dietary_filters}
         filtered_restaurants = filter_restaurants(restaurants, filters)
 
         # save results so it doesn't flicker on every interaction
