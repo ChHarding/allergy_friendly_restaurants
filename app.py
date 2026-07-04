@@ -8,6 +8,9 @@ from streamlit_folium import st_folium
 import requests
 import pandas as pd
 
+#use streamlit wide layout for mobile compatibility
+st.set_page_config(layout="wide")
+
 # Overpass API endpoint for querying OpenStreetMap data
 OVERPASS_URL = "https://overpass-api.de/api/interpreter" 
 
@@ -245,12 +248,14 @@ def main():
     st.title("Accessible Dining Finder") 
     
 
-    location_input = st.text_input("Enter a location (ZIP, city, or county):") 
-    radius_input = st.number_input("Enter search radius (5-50 miles):", min_value=1, max_value=50, value=5)
-    dietary_options = st.multiselect(
-        "Select dietary needs:",
-        ["Gluten-free", "Vegan", "Dairy-free"]
-    ) 
+    # improve mobile UI spacing by wrapping inputs in a container
+    with st.container():
+        location_input = st.text_input("Enter a location (ZIP, city, or county):")
+        radius_input = st.number_input("Search radius (miles):", 1, 50, 5)
+        dietary_options = st.multiselect(
+            "Dietary needs:",
+            ["Gluten-free", "Vegan", "Dairy-free"]
+        )
     #cuisine_filter = st.text_input("Enter cuisine type (optional):") 
     
 
@@ -262,7 +267,8 @@ def main():
 
 
     # The dietary filter is transformed to match the tag format used in the restaurant data.
-    if st.button("Search"):
+    # make the tap target for search larger and more mobile friendly
+    if st.button("🔍 Search", use_container_width=True):
         lat, lon, bbox = get_location(location_input)
 
         if lat is None or lon is None:
@@ -298,9 +304,9 @@ def main():
     else:
         st.write(f"Showing {len(results)} restaurants")
 
-        #builds folium map with 700 width and 500 height
+        #builds folium map responsive to screen size
         if st.session_state.map:
-            st_folium(st.session_state.map, width=700, height=500)
+            st_folium(st.session_state.map, use_container_width=True, height=500)
 
 
 #main
