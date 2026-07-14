@@ -247,6 +247,15 @@ def main():
 
     # Set the title of the Streamlit app to "Accessible Dining Finder"
     st.title("Accessible Dining Finder") 
+
+    #adds info about the safety score to the app, which is hidden by default and can be expanded by clicking on it
+    with st.expander("What is the Safety Score?"):
+        st.write(
+             "Each restaurant receives a score based on how many of your selected dietary "
+             "needs are supported:\n\n"
+               "- +1 for each matching dietary tag\n"
+               "- Higher score = better match\n"
+        )
     
 
     # improve mobile UI spacing by wrapping inputs in a container
@@ -311,6 +320,7 @@ def main():
         #builds folium map responsive to screen size
         if st.session_state.map:
             st_folium(st.session_state.map, use_container_width=True, height=500)
+
 
 
 #main
