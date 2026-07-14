@@ -277,19 +277,21 @@ def main():
         #st.write(f"DEBUG location: lat={lat}, lon={lon}")
 
         # Fetch restaurants from API based on the user input location, radius, and dietary filters. 
-        restaurants = fetch_restaurants(lat, lon, radius_input, bbox)
+        # Includes a spinner to indicate that the app is loading restaurant data
+        with st.spinner("Finding accessible restaurants..."):
+            restaurants = fetch_restaurants(lat, lon, radius_input, bbox)
 
-        #parses restaurant data, computes safety score, adds it as a key-value pair in restaurant dict
-        for restaurant in restaurants:
-            restaurant["safety_score"] = compute_safety_score(restaurant)
+            #parses restaurant data, computes safety score, adds it as a key-value pair in restaurant dict
+            for restaurant in restaurants:
+                restaurant["safety_score"] = compute_safety_score(restaurant)
 
-        #filters = {"dietary": dietary_filter, "cuisine": cuisine_filter}
-        filters = {"dietary": dietary_filters}
-        filtered_restaurants = filter_restaurants(restaurants, filters)
+            #filters = {"dietary": dietary_filter, "cuisine": cuisine_filter}
+            filters = {"dietary": dietary_filters}
+            filtered_restaurants = filter_restaurants(restaurants, filters)
 
-        # save results so it doesn't flicker on every interaction
-        st.session_state.results = filtered_restaurants
-        st.session_state.map = generate_map(filtered_restaurants)  # store map
+            # save results so it doesn't flicker on every interaction
+            st.session_state.results = filtered_restaurants
+            st.session_state.map = generate_map(filtered_restaurants)  # store map
 
     # Check if there are results stored in the session state, if so, show on Folium map
     results = st.session_state.results
