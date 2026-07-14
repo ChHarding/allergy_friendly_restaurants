@@ -7,6 +7,7 @@ import folium
 from streamlit_folium import st_folium
 import requests
 import pandas as pd
+import time
 
 #use streamlit wide layout for mobile compatibility
 st.set_page_config(layout="wide")
@@ -279,6 +280,7 @@ def main():
         # Fetch restaurants from API based on the user input location, radius, and dietary filters. 
         # Includes a spinner to indicate that the app is loading restaurant data
         with st.spinner("Finding accessible restaurants..."):
+            time.sleep(0.3)  # force UI update
             restaurants = fetch_restaurants(lat, lon, radius_input, bbox)
 
             #parses restaurant data, computes safety score, adds it as a key-value pair in restaurant dict
