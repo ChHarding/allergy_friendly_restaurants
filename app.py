@@ -7,6 +7,7 @@ import folium
 from streamlit_folium import st_folium
 import requests
 import pandas as pd
+import time
 
 #use streamlit wide layout for mobile compatibility
 st.set_page_config(layout="wide")
@@ -246,6 +247,15 @@ def main():
 
     # Set the title of the Streamlit app to "Accessible Dining Finder"
     st.title("Accessible Dining Finder") 
+
+    #adds info about the safety score to the app, which is hidden by default and can be expanded by clicking on it
+    with st.expander("What is the Safety Score?"):
+        st.write(
+             "Each restaurant receives a score based on how many of your selected dietary "
+             "needs are supported:\n\n"
+               "- +1 for each matching dietary tag\n"
+               "- Higher score = better match\n"
+        )
     
 
     # improve mobile UI spacing by wrapping inputs in a container
@@ -277,15 +287,18 @@ def main():
         #st.write(f"DEBUG location: lat={lat}, lon={lon}")
 
         # Fetch restaurants from API based on the user input location, radius, and dietary filters. 
-        restaurants = fetch_restaurants(lat, lon, radius_input, bbox)
+        # Includes a spinner to indicate that the app is loading restaurant data
+        with st.spinner("Finding accessible restaurants..."):
+            time.sleep(0.3)  # force UI update
+            restaurants = fetch_restaurants(lat, lon, radius_input, bbox)
 
-        #parses restaurant data, computes safety score, adds it as a key-value pair in restaurant dict
-        for restaurant in restaurants:
-            restaurant["safety_score"] = compute_safety_score(restaurant)
+            #parses restaurant data, computes safety score, adds it as a key-value pair in restaurant dict
+            for restaurant in restaurants:
+                restaurant["safety_score"] = compute_safety_score(restaurant)
 
-        #filters = {"dietary": dietary_filter, "cuisine": cuisine_filter}
-        filters = {"dietary": dietary_filters}
-        filtered_restaurants = filter_restaurants(restaurants, filters)
+            #filters = {"dietary": dietary_filter, "cuisine": cuisine_filter}
+            filters = {"dietary": dietary_filters}
+            filtered_restaurants = filter_restaurants(restaurants, filters)
 
         # save results so it doesn't flicker on every interaction
         st.session_state.results = filtered_restaurants
@@ -304,9 +317,13 @@ def main():
     else:
         st.write(f"Showing {len(results)} restaurants")
 
+        #adds caption for extra clarification of safety score
+        st.caption("Safety Score = how many of your dietary needs a restaurant supports")
+
         #builds folium map responsive to screen size
         if st.session_state.map:
             st_folium(st.session_state.map, use_container_width=True, height=500)
+
 
 
 #main
