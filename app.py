@@ -291,9 +291,9 @@ def main():
             filters = {"dietary": dietary_filters}
             filtered_restaurants = filter_restaurants(restaurants, filters)
 
-            # save results so it doesn't flicker on every interaction
-            st.session_state.results = filtered_restaurants
-            st.session_state.map = generate_map(filtered_restaurants)  # store map
+        # save results so it doesn't flicker on every interaction
+        st.session_state.results = filtered_restaurants
+        st.session_state.map = generate_map(filtered_restaurants)  # store map
 
     # Check if there are results stored in the session state, if so, show on Folium map
     results = st.session_state.results
