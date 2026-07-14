@@ -317,6 +317,9 @@ def main():
     else:
         st.write(f"Showing {len(results)} restaurants")
 
+        #adds caption for extra clarification of safety score
+        st.caption("Safety Score = how many of your dietary needs a restaurant supports")
+
         #builds folium map responsive to screen size
         if st.session_state.map:
             st_folium(st.session_state.map, use_container_width=True, height=500)
