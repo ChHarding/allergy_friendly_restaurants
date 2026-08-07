@@ -70,7 +70,7 @@ def fetch_restaurants(lat, lon, radius, bbox=None):
 
     dietary_filter = ""  
 
-    
+
     if bbox:
         lat1, lat2, lon1, lon2 = bbox
 
@@ -83,6 +83,7 @@ def fetch_restaurants(lat, lon, radius, bbox=None):
         );
         out center;
         """
+
     else:
         APIquery = f"""
         [out:json][timeout:60];
@@ -218,11 +219,53 @@ def generate_map(data):
 
     m = folium.Map(location=[data[0]["lat"], data[0]["lon"]], zoom_start=13)
     
-    
+    #make the popup more aesthetically pleasing with a card-like design, rounded corners, and padding
     for restaurant in data:
+
+        popup_html = f"""
+        <div style="
+            font-family: Arial, sans-serif;
+            width: 180px;
+            padding: 5px;
+        ">
+            <div style="
+                font-size: 14px;
+                font-weight: bold;
+                color: #2c3e50;
+                margin-bottom: 6px;
+            ">
+                {restaurant['name']}
+            </div>
+
+            <div style="
+                font-size: 12px;
+                color: #555;
+            ">
+                Dietary Match Score:
+            </div>
+
+            <div style="
+                display: inline-block;
+                background-color: #2ecc71;
+                color: white;
+                padding: 3px 8px;
+                border-radius: 12px;
+                font-size: 12px;
+                margin-top: 4px;
+            ">
+                ⭐ {restaurant['safety_score']}
+            </div>
+        </div>
+        """
+
+        popup = folium.Popup(
+            popup_html,
+            max_width=250
+        )
+
         folium.Marker(
             location=[restaurant["lat"], restaurant["lon"]],
-            popup=f"{restaurant['name']} - Safety Score: {restaurant['safety_score']}"
+            popup=popup
         ).add_to(m)
     
     return m 
@@ -245,8 +288,37 @@ def main():
     if "map" not in st.session_state:
         st.session_state.map = None
 
-    # Set the title of the Streamlit app to "Accessible Dining Finder"
-    st.title("Accessible Dining Finder") 
+    # Set the title of the Streamlit app to "EZ Dietary Dining"
+    st.title("EZ Dietary Dining") 
+
+    #make the search bar green
+    st.markdown("""
+    <style>
+
+    /* Target the Search button */
+    div[data-testid="stButton"] > button {
+        background-color: #2ecc71 !important;
+        color: white !important;
+        border-radius: 10px !important;
+        border: none !important;
+        font-size: 16px !important;
+        padding: 10px 20px !important;
+    }
+
+    /* Hover effect */
+    div[data-testid="stButton"] > button:hover {
+        background-color: #27ae60 !important;
+        color: white !important;
+    }
+
+    /* Remove weird outline */
+    div[data-testid="stButton"] > button:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    </style>
+    """, unsafe_allow_html=True)
 
     #adds info about the safety score to the app, which is hidden by default and can be expanded by clicking on it
     with st.expander("What is the Safety Score?"):
@@ -291,6 +363,8 @@ def main():
         with st.spinner("Finding accessible restaurants..."):
             time.sleep(0.3)  # force UI update
             restaurants = fetch_restaurants(lat, lon, radius_input, bbox)
+
+            st.write(f"DEBUG: Raw restaurants fetched = {len(restaurants)}")
 
             #parses restaurant data, computes safety score, adds it as a key-value pair in restaurant dict
             for restaurant in restaurants:
